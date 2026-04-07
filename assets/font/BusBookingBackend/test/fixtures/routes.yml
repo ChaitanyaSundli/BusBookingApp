@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  source_city: MyString
+  destination_city: MyString
+  total_distance_km: 1
+  estimated_duration_mins: 1
+  is_active: false
+
+two:
+  source_city: MyString
+  destination_city: MyString
+  total_distance_km: 1
+  estimated_duration_mins: 1
+  is_active: false

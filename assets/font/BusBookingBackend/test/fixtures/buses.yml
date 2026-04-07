@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  operator: one
+  bus_no: MyString
+  bus_name: MyString
+  bus_type: 1
+  total_seats: 1
+  is_active: false
+
+two:
+  operator: two
+  bus_no: MyString
+  bus_name: MyString
+  bus_type: 1
+  total_seats: 1
+  is_active: false

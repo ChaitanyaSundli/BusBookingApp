@@ -1,0 +1,27 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  route: one
+  city_name: MyString
+  stop_name: MyString
+  stop_address: MyString
+  stop_order: 1
+  km_from_source: 1
+  scheduled_arrival_time: 2026-03-26 13:56:46
+  scheduled_departure_time: 2026-03-26 13:56:46
+  halt_mins: 1
+  is_boarding_point: false
+  is_drop_point: false
+
+two:
+  route: two
+  city_name: MyString
+  stop_name: MyString
+  stop_address: MyString
+  stop_order: 1
+  km_from_source: 1
+  scheduled_arrival_time: 2026-03-26 13:56:46
+  scheduled_departure_time: 2026-03-26 13:56:46
+  halt_mins: 1
+  is_boarding_point: false
+  is_drop_point: false

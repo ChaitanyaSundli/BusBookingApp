@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  trip: one
+  seat: one
+  seat_price: 9.99
+  status: 1
+  locked_by_user: 1
+  lock_expiry_time: 2026-03-26 13:59:21
+
+two:
+  trip: two
+  seat: two
+  seat_price: 9.99
+  status: 1
+  locked_by_user: 1
+  lock_expiry_time: 2026-03-26 13:59:21

@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  booking: one
+  trip_seat: one
+  passenger: one
+  seat_price: 9.99
+
+two:
+  booking: two
+  trip_seat: two
+  passenger: two
+  seat_price: 9.99

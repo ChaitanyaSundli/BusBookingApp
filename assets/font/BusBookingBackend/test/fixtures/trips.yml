@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  bus: one
+  route: one
+  travel_start_date: 2026-03-26
+  departure_time: 2026-03-26 13:57:32
+  arrival_time: 2026-03-26 13:57:32
+  status: 1
+  available_seats: 1
+
+two:
+  bus: two
+  route: two
+  travel_start_date: 2026-03-26
+  departure_time: 2026-03-26 13:57:32
+  arrival_time: 2026-03-26 13:57:32
+  status: 1
+  available_seats: 1
