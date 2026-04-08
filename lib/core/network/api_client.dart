@@ -12,10 +12,14 @@ class DioClient {
       BaseOptions(
         baseUrl: _configuredBaseUrl,
         headers: {'Accept': 'application/json'},
+        connectTimeout: Duration(minutes: 1),
+        receiveTimeout: Duration(minutes: 1),
+        sendTimeout: Duration(minutes: 1),
+
       ),
     )..interceptors.addAll([
-        LogInterceptor(responseBody: true, requestBody: true, responseHeader: false),
-        AuthInterceptor(),
+      AuthInterceptor(),
+      LogInterceptor(responseBody: true, requestBody: true, responseHeader: false),
       ]);
   }
 }

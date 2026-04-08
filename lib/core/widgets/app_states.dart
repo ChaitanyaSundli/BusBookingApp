@@ -1,21 +1,44 @@
+// lib/core/widgets/app_states.dart
 import 'package:flutter/material.dart';
+import 'app_button.dart';
 
-class AppLoading extends StatelessWidget {
-  const AppLoading({super.key});
+class AppLoadingState extends StatelessWidget {
+  final String? message;
+
+  const AppLoadingState({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          if (message != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              message!,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
 
-class AppError extends StatelessWidget {
+class AppErrorState extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
+  final String? retryText;
 
-  const AppError({super.key, required this.message, this.onRetry});
+  const AppErrorState({
+    super.key,
+    required this.message,
+    this.onRetry,
+    this.retryText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,22 +46,24 @@ class AppError extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: Colors.red.shade300),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
             Text(
               message,
+              style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade700),
             ),
             if (onRetry != null) ...[
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Retry'),
+              const SizedBox(height: 24),
+              AppButton(
+                text: retryText ?? 'Try Again',
+                onTap: onRetry,
               ),
             ],
           ],
@@ -48,10 +73,17 @@ class AppError extends StatelessWidget {
   }
 }
 
-class AppEmpty extends StatelessWidget {
+class AppEmptyState extends StatelessWidget {
   final String message;
+  final IconData? icon;
+  final Widget? action;
 
-  const AppEmpty({super.key, required this.message});
+  const AppEmptyState({
+    super.key,
+    required this.message,
+    this.icon,
+    this.action,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -59,16 +91,26 @@ class AppEmpty extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined,
-                size: 56, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
+            Icon(
+              icon ?? Icons.inbox_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
             Text(
               message,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
             ),
+            if (action != null) ...[
+              const SizedBox(height: 24),
+              action!,
+            ],
           ],
         ),
       ),

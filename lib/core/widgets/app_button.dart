@@ -1,89 +1,84 @@
-import 'dart:async';
+// lib/core/widgets/app_button.dart
 import 'package:flutter/material.dart';
 
-class AppButton extends StatefulWidget {
+class AppButton extends StatelessWidget {
   final String text;
-  final FutureOr<void> Function()? onTap;
-  final Duration debounceDuration;
+  final VoidCallback? onTap;
+  final bool isLoading;
+  final bool outlined;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final double? width;
+  final double height;
+  final EdgeInsets? padding;
+  final Widget? icon;
 
   const AppButton({
     super.key,
     required this.text,
-    required this.onTap,
-    this.debounceDuration = const Duration(milliseconds: 500),
+    this.onTap,
+    this.isLoading = false,
+    this.outlined = false,
+    this.backgroundColor,
+    this.textColor,
+    this.width,
+    this.height = 48,
+    this.padding,
+    this.icon,
   });
 
   @override
-  State<AppButton> createState() => _AppButtonState();
-}
-
-class _AppButtonState extends State<AppButton> {
-  bool _busy = false;
-  Timer? _debounce;
-
-  Future<void> _handleTap() async {
-    // prevent tap if disabled or busy
-    if (widget.onTap == null || _busy) return;
-
-    // debounce: ignore rapid taps
-    if (_debounce?.isActive ?? false) return;
-
-    _debounce = Timer(widget.debounceDuration, () {});
-
-    setState(() => _busy = true);
-
-    try {
-      await widget.onTap!.call();
-    } catch (e) {
-      debugPrint("Button error: $e");
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final disabled = widget.onTap == null || _busy;
+    final theme = Theme.of(context);
+    final bgColor = backgroundColor ?? theme.primaryColor;
+    final txtColor = textColor ?? (outlined ? bgColor : Colors.white);
 
-    return GestureDetector(
-      onTap: disabled ? null : _handleTap,
-      child: Opacity(
-        opacity: disabled ? 0.5 : 1,
-        child: Container(
-          height: 50,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: _busy
-              ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
-          )
-              : Text(
-            widget.text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+    Widget child = isLoading
+        ? SizedBox(
+      height: 20,
+      width: 20,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(txtColor),
+      ),
+    )
+        : Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[icon!, const SizedBox(width: 8)],
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: txtColor,
           ),
         ),
+      ],
+    );
+
+    if (outlined) {
+      return OutlinedButton(
+        onPressed: isLoading ? null : onTap,
+        style: OutlinedButton.styleFrom(
+          minimumSize: width != null ? Size(width!, height) : Size.fromHeight(height),
+          padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
+          side: BorderSide(color: bgColor),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: child,
+      );
+    }
+
+    return ElevatedButton(
+      onPressed: isLoading ? null : onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: bgColor,
+        minimumSize: width != null ? Size(width!, height) : Size.fromHeight(height),
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
+      child: child,
     );
   }
 }

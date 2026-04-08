@@ -1,41 +1,42 @@
+// lib/core/widgets/app_layout.dart
 import 'package:flutter/material.dart';
 
-class AppLayoutFrame extends StatelessWidget {
+class AppLayout extends StatelessWidget {
   final Widget child;
+  final bool showAppBar;
+  final String? title;
+  final List<Widget>? actions;
+  final Widget? floatingActionButton;
+  final bool extendBodyBehindAppBar;
+  final PreferredSizeWidget? bottom;
+  final Color? backgroundColor;
 
-  const AppLayoutFrame({super.key, required this.child});
+  const AppLayout({
+    super.key,
+    required this.child,
+    this.showAppBar = false,
+    this.title,
+    this.actions,
+    this.floatingActionButton,
+    this.extendBodyBehindAppBar = false,
+    this.bottom,
+    this.backgroundColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth <= 600) {
-          return child;
-        }
-
-        final width = constraints.maxWidth;
-        final maxContentWidth = width >= 1200 ? 560.0 : 520.0;
-        final horizontalPadding = width >= 900 ? 28.0 : 16.0;
-
-        return Scaffold(
-          backgroundColor: const Color(0xFFF1F5F9),
-          body: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxContentWidth),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: ColoredBox(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: child,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return Scaffold(
+      backgroundColor: backgroundColor ?? Colors.grey.shade50,
+      extendBodyBehindAppBar: extendBodyBehindAppBar,
+      appBar: showAppBar
+          ? AppBar(
+        title: title != null ? Text(title!) : null,
+        actions: actions,
+        bottom: bottom,
+      )
+          : null,
+      body: child,
+      floatingActionButton: floatingActionButton,
     );
   }
 }

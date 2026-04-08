@@ -1,129 +1,129 @@
-import 'package:flutter/widgets.dart';
+// lib/core/utils/router/app_router.dart
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:quick_bus/core/features/home/presentation/screens/boarding_screen.dart';
-import 'package:quick_bus/core/features/home/presentation/screens/passenger_screen.dart';
-import 'package:quick_bus/core/features/home/presentation/screens/seat_selection_screen.dart';
-import 'package:quick_bus/core/features/operators_bus/presentation/screen/bus_list_screen.dart';
-import 'package:quick_bus/core/features/profile/presentation/screens/profile_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:quick_bus/core/router/router_gaurd.dart';
 
-import '../features/SearchOperator/presentation/screens/operator_detail_screen.dart';
-import '../features/SearchOperator/presentation/screens/operator_list_screen.dart';
-import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/auth/presentation/screens/signup_screen.dart';
-import '../features/bookings/presentation/screens/booking_detail_screen.dart';
-import '../features/bookings/presentation/screens/bookings.screen.dart';
-import '../features/home/presentation/screens/home_screen.dart';
-import '../features/navigation/presentation/main_shell.dart';
-import '../utils/local_storage/session_manager.dart';
+import '../auth/data/cubit/auth_cubit.dart';
+import '../auth/presentation/screens/login_screen.dart';
+import '../auth/presentation/screens/signup_screen.dart';
+import '../screens/home_screen.dart';
+import '../screens/passenger_detail_screen.dart';
+import '../screens/payment_screen.dart';
+import '../screens/splash_screen.dart';
+import '../screens/trip_detail_screen.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+class AppRouter {
+  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
-  initialLocation: '/login',
-  redirect: (context, state) async {
-    final session = SessionManager();
-    await session.loadSession();
-
-    final isLoggedIn = session.token != null;
-    final path = state.uri.path;
-    final isAuthPage = path == '/login' || path == '/signup';
-
-    if (isAuthPage && isLoggedIn) return '/home';
-    return null;
-  },
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => LoginScreen(
-        redirectTo: state.uri.queryParameters['redirect'],
-      ),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => SignupScreen(
-        redirectTo: state.uri.queryParameters['redirect'],
-      ),
-    ),
-    ShellRoute(
-      navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) => MainShell(child: child),
+  static GoRouter createRouter(AuthCubit authCubit) {
+    return GoRouter(
+      navigatorKey: rootNavigatorKey,
+      initialLocation: '/splash',  // ← start here
+      refreshListenable: GoRouterRefreshStream(authCubit.stream),
+      redirect: (context, state) => AuthGuard.redirect(context, state),
       routes: [
         GoRoute(
-          path: '/',
-          builder: (_, _) => HomeScreen(),
+          path: '/splash',
+          builder: (context, state) => const SplashScreen(),
         ),
+        GoRoute(
+          path: '/login',
+          name: 'login',
+          builder: (context, state) {
+            final redirect = state.uri.queryParameters['redirect'];
+            return LoginScreen(redirectTo: redirect);
+          },
+        ),
+        GoRoute(
+          path: '/signup',
+          name: 'signup',
+          builder: (context, state) {
+            final redirect = state.uri.queryParameters['redirect'];
+            return SignupScreen(redirectTo: redirect);
+          },
+        ),
+
+        // Home (with tabs)
         GoRoute(
           path: '/home',
-          builder: (_, _) => HomeScreen(),
+          name: 'home',
+          builder: (context, state) => const HomeScreen(),
         ),
+
+        // Redirect /my-bookings → /home?tab=1
         GoRoute(
-          path: '/bookings',
-          builder: (_, _) => const BookingsScreen(),
-          routes: [
-            GoRoute(
-              path: 'detail/:id',
-              builder: (context, state) {
-                final id = int.parse(state.pathParameters['id']!);
-                return BookingDetailScreen(id: id);
-              },
-            ),
-          ],
+          path: '/my-bookings',
+          redirect: (context, state) => '/home?tab=1',
         ),
+
+        // Redirect /profile → /home?tab=2
         GoRoute(
           path: '/profile',
-          builder: (_, state) => const ProfileScreen(),
+          redirect: (context, state) => '/home?tab=2',
+        ),
+
+        // Trip detail
+        GoRoute(
+          path: '/trip/:id',
+          name: 'trip_detail',
+          builder: (context, state) {
+            final id = int.parse(state.pathParameters['id']!);
+            return TripDetailScreen(tripId: id);
+          },
+        ),
+
+        // Passenger details (booking flow)
+        GoRoute(
+          path: '/booking/passengers',
+          name: 'booking_passengers',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return PassengerDetailsScreen(
+              tripId: extra['tripId'] as int,
+              boardingStopId: extra['boardingStopId'] as int,
+              dropStopId: extra['dropStopId'] as int,
+              selectedSeatIds: (extra['selectedSeatIds'] as List).cast<int>(),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/payment',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return PaymentScreen(
+              bookingId: extra['bookingId'],
+              paymentId: extra['paymentId'],
+              totalPrice: extra['totalPrice'],
+            );
+          },
+        ),
+        GoRoute(
+          path: '/payment',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return PaymentScreen(
+              bookingId: extra['bookingId'],
+              paymentId: extra['paymentId'],
+              totalPrice: extra['totalPrice'],
+            );
+          },
         ),
       ],
-    ),
+      errorBuilder: (context, state) => Scaffold(
+        body: Center(
+          child: Text('Page not found: ${state.uri}'),
+        ),
+      ),
+    );
+  }
+}
 
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/operator-list/:source/:destination',
-      builder: (context, state) => OperatorListScreen(
-        source: state.pathParameters['source']!,
-        destination: state.pathParameters['destination']!,
-        date: state.uri.queryParameters['date'],
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/bus-list/:source/:destination/:operatorId',
-      builder: (context, state) => BusListScreen(
-        source: state.pathParameters['source']!,
-        destination: state.pathParameters['destination']!,
-        operatorId: int.parse(state.pathParameters['operatorId']!),
-        date: state.uri.queryParameters['date'] ?? '',
-        operatorName: state.uri.queryParameters['operator'] ?? 'Bus Operator',
-      ),
-    ),
-
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/operators/:operatorId',
-      builder: (context, state) => OperatorDetailScreen(
-        operatorId: int.parse(state.pathParameters['operatorId']!),
-        operatorName: state.uri.queryParameters['name'],
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/seat/:tripId',
-      builder: (context, state) =>
-          SeatSelectionScreen(tripId: int.parse(state.pathParameters['tripId']!)),
-    ),
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/boarding/:tripId',
-      builder: (context, state) =>
-          BoardingScreen(tripId: int.parse(state.pathParameters['tripId']!)),
-    ),
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/passenger/:tripId',
-      builder: (context, state) =>
-          PassengerScreen(tripId: int.parse(state.pathParameters['tripId']!)),
-    ),
-  ],
-);
+// Helper for GoRouter refresh
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    stream.listen((_) {
+      notifyListeners();
+    });
+  }
+}
