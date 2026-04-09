@@ -7,10 +7,12 @@ import 'package:quick_bus/core/router/router_gaurd.dart';
 import '../auth/data/cubit/auth_cubit.dart';
 import '../auth/presentation/screens/login_screen.dart';
 import '../auth/presentation/screens/signup_screen.dart';
-import '../screens/home_screen.dart';
+import '../screens/booking_detail_screen.dart';
+import '../screens/home_tab.dart';
+import '../screens/my_bookings_screen.dart';
 import '../screens/passenger_detail_screen.dart';
 import '../screens/payment_screen.dart';
-import '../screens/splash_screen.dart';
+import '../screens/profile_screen.dart';
 import '../screens/trip_detail_screen.dart';
 
 class AppRouter {
@@ -19,14 +21,11 @@ class AppRouter {
   static GoRouter createRouter(AuthCubit authCubit) {
     return GoRouter(
       navigatorKey: rootNavigatorKey,
-      initialLocation: '/splash',  // ← start here
+      initialLocation: '/home',
       refreshListenable: GoRouterRefreshStream(authCubit.stream),
       redirect: (context, state) => AuthGuard.redirect(context, state),
       routes: [
-        GoRoute(
-          path: '/splash',
-          builder: (context, state) => const SplashScreen(),
-        ),
+        // Auth routes (outside shell)
         GoRoute(
           path: '/login',
           name: 'login',
@@ -44,26 +43,7 @@ class AppRouter {
           },
         ),
 
-        // Home (with tabs)
-        GoRoute(
-          path: '/home',
-          name: 'home',
-          builder: (context, state) => const HomeScreen(),
-        ),
-
-        // Redirect /my-bookings → /home?tab=1
-        GoRoute(
-          path: '/my-bookings',
-          redirect: (context, state) => '/home?tab=1',
-        ),
-
-        // Redirect /profile → /home?tab=2
-        GoRoute(
-          path: '/profile',
-          redirect: (context, state) => '/home?tab=2',
-        ),
-
-        // Trip detail
+        // Top‑level routes not part of bottom nav
         GoRoute(
           path: '/trip/:id',
           name: 'trip_detail',
@@ -72,8 +52,6 @@ class AppRouter {
             return TripDetailScreen(tripId: id);
           },
         ),
-
-        // Passenger details (booking flow)
         GoRoute(
           path: '/booking/passengers',
           name: 'booking_passengers',
@@ -87,33 +65,81 @@ class AppRouter {
             );
           },
         ),
-        GoRoute(
-          path: '/payment',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>;
-            return PaymentScreen(
-              bookingId: extra['bookingId'],
-              paymentId: extra['paymentId'],
-              totalPrice: extra['totalPrice'],
-            );
+
+        // Main shell with bottom navigation
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return HomeScreenWithShell(navigationShell: navigationShell);
           },
-        ),
-        GoRoute(
-          path: '/payment',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>;
-            return PaymentScreen(
-              bookingId: extra['bookingId'],
-              paymentId: extra['paymentId'],
-              totalPrice: extra['totalPrice'],
-            );
-          },
+          branches: [
+            // Branch 0: Home Tab
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  name: 'home',
+                  builder: (context, state) => const HomeTab(),
+                  routes: [
+                    GoRoute(
+                      path: 'payment',
+                      name: 'home_payment',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>;
+                        return PaymentScreen(
+                          bookingId: extra['bookingId'] as int,
+                          paymentId: extra['paymentId'] as int,
+                          totalPrice: extra['totalPrice'] as double,
+                          source: 'home',
+                        );
+                      },
+                    ),
+                    GoRoute(
+                      path: 'booking/:id',
+                      name: 'home_booking_detail',
+                      builder: (context, state) {
+                        final id = int.parse(state.pathParameters['id']!);
+                        return BookingDetailScreen(bookingId: id, source: 'home');
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch 1: My Bookings Tab
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/my-bookings',
+                  name: 'my_bookings',
+                  builder: (context, state) => const MyBookingsScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'booking/:id',
+                      name: 'my_bookings_booking_detail',
+                      builder: (context, state) {
+                        final id = int.parse(state.pathParameters['id']!);
+                        return BookingDetailScreen(bookingId: id, source: 'my-bookings');
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch 2: Profile Tab
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  name: 'profile',
+                  builder: (context, state) => const ProfileScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
       errorBuilder: (context, state) => Scaffold(
-        body: Center(
-          child: Text('Page not found: ${state.uri}'),
-        ),
+        body: Center(child: Text('Page not found: ${state.uri}')),
       ),
     );
   }
@@ -122,8 +148,46 @@ class AppRouter {
 // Helper for GoRouter refresh
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    stream.listen((_) {
-      notifyListeners();
-    });
+    stream.listen((_) => notifyListeners());
+  }
+}
+
+// Wrapper for bottom navigation bar
+class HomeScreenWithShell extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const HomeScreenWithShell({super.key, required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: navigationShell.currentIndex,
+        onTap: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book_online_outlined),
+            activeIcon: Icon(Icons.book_online),
+            label: 'My Bookings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,24 +1,52 @@
-// lib/core/features/booking/data/cubit/booking_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/request/booking_request.dart';
 import '../models/response/booking.dart';
-import '../models/response/post_booking_detail.dart';
+import '../models/response/booking_details.dart';
 import '../models/response/booking_response.dart';
 import '../repository/booking_repository.dart';
 
 part 'booking_state.dart';
-
+// lib/features/booking/data/cubit/booking_cubit.dart
 class BookingCubit extends Cubit<BookingState> {
   final BookingRepository repo;
 
-  BookingCubit(this.repo) : super(BookingInitial());
+  BookingCubit(this.repo) : super(const BookingInitial());
+
+  Future<void> fetchBookings() async {
+    emit(const BookingLoading());
+    try {
+      final bookings = await repo.getBookings();
+      emit(BookingLoaded(bookings: bookings));
+    } catch (e) {
+      emit(BookingError(e.toString()));
+    }
+  }
+
+  Future<void> fetchBookingDetails(int id) async {
+    emit(const BookingLoading());
+    try {
+      final detail = await repo.getBookingDetails(id);
+      final current = state is BookingLoaded ? state as BookingLoaded : null;
+      emit(BookingLoaded(
+        bookings: current?.bookings ?? [],
+        selectedBooking: detail,
+      ));
+    } catch (e) {
+      emit(BookingError(e.toString()));
+    }
+  }
 
   Future<void> createBooking(CreateBookingRequest request) async {
-    emit(BookingLoading());
+    emit(const BookingLoading());
     try {
       final response = await repo.createBooking(request);
       if (response.success) {
-        emit(BookingCreateSuccess(response));
+        // after successful creation, refresh bookings
+        final bookings = await repo.getBookings();
+        emit(BookingLoaded(
+          bookings: bookings,
+          createResponse: response,
+        ));
       } else {
         emit(BookingError(response.error ?? 'Booking failed'));
       }
@@ -27,32 +55,13 @@ class BookingCubit extends Cubit<BookingState> {
     }
   }
 
-  Future<void> fetchBookings() async {
-    emit(BookingLoading());
-    try {
-      final bookings = await repo.getBookings();
-      emit(BookingsLoaded(bookings));
-    } catch (e) {
-      emit(BookingError(e.toString()));
-    }
-  }
-
-  Future<void> fetchBookingDetails(int id) async {
-    emit(BookingDetailLoading());
-    try {
-      final detail = await repo.getBookingDetails(id);
-      emit(BookingDetailLoaded(detail));
-    } catch (e) {
-      emit(BookingError(e.toString()));
-    }
-  }
-
   Future<void> cancelBooking(int id) async {
-    emit(BookingLoading());
+    emit(const BookingLoading());
     try {
       final response = await repo.cancelBooking(id);
       if (response.success) {
-        emit(BookingCancelled(response));
+        final bookings = await repo.getBookings();
+        emit(BookingLoaded(bookings: bookings, cancelResponse: response));
       } else {
         emit(BookingError(response.error ?? 'Cancellation failed'));
       }

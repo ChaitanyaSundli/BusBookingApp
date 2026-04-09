@@ -1,69 +1,88 @@
 // lib/features/home/presentation/screens/my_bookings_screen.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/widgets/app_states.dart';
 import '../cubit/booking_cubit.dart';
+import '../widgets/app_button.dart';
 import '../widgets/app_layout_frame.dart';
+import '../widgets/app_states.dart';
 import '../widgets/booking_card.dart';
 
-class MyBookingsScreen extends StatelessWidget {
+class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
 
   @override
+  State<MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+
+class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookings();
+  }
+
+  Future<void> _fetchBookings() async {
+    await context.read<BookingCubit>().fetchBookings();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: context.read<BookingCubit>()..fetchBookings(),
-      child: AppLayout(
-        showAppBar: true,
-        title: 'My Bookings',
-        child: BlocBuilder<BookingCubit, BookingState>(
-          builder: (context, state) {
-            if (state is BookingLoading) {
-              return const AppLoadingState(message: 'Loading your bookings...');
-            }
+    return AppLayout(
+      showAppBar: true,
+      title: 'My Bookings',
+      child: BlocConsumer<BookingCubit, BookingState>(
+        listener: (context, state) {
+          if (state is BookingError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        builder: (context, state) {
+          if (state is BookingLoading) {
+            return const AppLoadingState(message: 'Loading your bookings...');
+          }
 
-            if (state is BookingError) {
-              return AppErrorState(
-                message: state.message,
-                onRetry: () => context.read<BookingCubit>().fetchBookings(),
-              );
-            }
-
-            if (state is BookingsLoaded) {
-              if (state.bookings.isEmpty) {
-                return AppEmptyState(
-                  message: 'No bookings found',
-                  icon: Icons.book_online_outlined,
-                  action: ElevatedButton(
-                    onPressed: () {
-                      // Navigate to search/bus list
-                    },
-                    child: const Text('Book a Trip'),
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: () => context.read<BookingCubit>().fetchBookings(),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: state.bookings.length,
-                  itemBuilder: (context, index) {
-                    final booking = state.bookings[index];
-                    return BookingCard(
-                      booking: booking,
-                      onTap: () => context.push('/booking/${booking.id}'),
-                    );
-                  },
+          if (state is BookingLoaded) {
+            if (state.bookings.isEmpty) {
+              return AppEmptyState(
+                message: 'No bookings yet',
+                icon: Icons.book_online_outlined,
+                action: AppButton(
+                  text: 'Book a Trip',
+                  onTap: () => context.go('/home'),
                 ),
               );
             }
 
-            return const SizedBox.shrink();
-          },
-        ),
+            return RefreshIndicator(
+              onRefresh: _fetchBookings,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: state.bookings.length,
+                itemBuilder: (ctx, i) => BookingCard(
+                  booking: state.bookings[i],
+                  onTap: () async {
+                    await context.push('/my-bookings/booking/${state.bookings[i].id}');
+                    _fetchBookings();
+                  },
+                ),
+              ),
+            );
+          }
+
+          if (state is BookingError) {
+            return AppErrorState(
+              message: state.message,
+              onRetry: _fetchBookings,
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
     );
   }

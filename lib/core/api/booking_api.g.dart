@@ -92,10 +92,10 @@ class _BookingApi implements BookingApi {
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<dynamic>(
-      Options(method: 'DELETE', headers: _headers, extra: _extra)
+      Options(method: 'PATCH', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'bookings/${id}',
+            'bookings/${id}/cancel',
             queryParameters: queryParameters,
             data: _data,
           )

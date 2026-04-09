@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'auth_interceptor.dart';
 
 class DioClient {
-  static const String _defaultBaseUrl = 'http://172.30.1.152:3000';
+  static const String _defaultBaseUrl = 'http://172.30.1.152:3000';//209
   static const String _configuredBaseUrl =
       String.fromEnvironment('API_BASE_URL', defaultValue: _defaultBaseUrl);
 

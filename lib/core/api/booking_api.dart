@@ -1,7 +1,6 @@
 // lib/core/features/booking/data/api/booking_api.dart
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-
 import '../models/request/booking_request.dart';
 
 part 'booking_api.g.dart';
@@ -19,6 +18,6 @@ abstract class BookingApi {
   @GET("bookings/{id}")
   Future<dynamic> getBookingDetails(@Path("id") int id);
 
-  @DELETE("bookings/{id}")
+  @PATCH("bookings/{id}/cancel")
   Future<dynamic> cancelBooking(@Path("id") int id);
 }

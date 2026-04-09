@@ -8,8 +8,8 @@ import '../utils/local_storage/session_manager.dart';
 
 
 class AuthGuard {
+// lib/core/utils/router/route_guard.dart
   static String? redirect(BuildContext context, GoRouterState state) {
-    if (state.matchedLocation == '/splash') return null;
 
     final authCubit = context.read<AuthCubit>();
     final authState = authCubit.state;
@@ -19,19 +19,10 @@ class AuthGuard {
     final isAuthPage = state.matchedLocation.contains('/login') ||
         state.matchedLocation.contains('/signup');
 
-    // Authenticated user on auth page → home
-    if (isAuthenticated && isAuthPage) {
-      return '/home';
-    }
-
-    // Completely unauthenticated (no token, no guest) trying to access protected content → login
-    // But we don't have a clear list of "protected" routes; instead we let the UI handle it.
-    // So we only redirect if there is NO auth state at all and not on auth page.
+    if (isAuthenticated && isAuthPage) return '/home';
     if (!isAuthenticated && !isGuest && !isAuthPage) {
       SessionManager().setPendingRedirect(state.uri.toString());
       return '/login';
     }
-
     return null;
-  }
-}
+  }}

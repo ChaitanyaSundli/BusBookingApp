@@ -1,4 +1,3 @@
-// lib/core/screens/splash_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -6,14 +5,31 @@ import 'package:go_router/go_router.dart';
 import '../auth/data/cubit/auth_cubit.dart';
 import '../utils/local_storage/session_manager.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 8), () {
+      if (!mounted) return;
+      final state = context.read<AuthCubit>().state;
+      if (state is AuthInitial) {
+        debugPrint(' Forcing navigation from splash');
+        context.go('/login');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        // Only navigate once we have a definitive state (not initial/loading)
         if (state is AuthSessionActive || state is AuthSuccess || state is AuthGuest) {
           final pending = SessionManager().consumePendingRedirect();
           context.go(pending ?? '/home');
@@ -23,7 +39,14 @@ class SplashScreen extends StatelessWidget {
       },
       child: const Scaffold(
         body: Center(
-          child: Text("Loading..."),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading QuickBus...'),
+            ],
+          ),
         ),
       ),
     );

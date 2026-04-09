@@ -200,7 +200,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ...boardingPoints.map(
                 (point) => RadioListTile<StopPoint>(
               title: Text(point.stopName),
-              subtitle: Text('${point.cityName} • ${point.stopAddress ?? ''}'),
+              subtitle: Text('${point.cityName} • ${point.stopAddress ?? ''} • ${formatTravelTime(point.scheduledArrivalTime)}'),
               value: point,
               groupValue: _selectedBoardingPoint,
               onChanged: (value) =>
@@ -216,7 +216,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ...dropPoints.map(
                 (point) => RadioListTile<StopPoint>(
               title: Text(point.stopName),
-              subtitle: Text('${point.cityName} • ${point.stopAddress ?? ''}'),
+              subtitle: Text('${point.cityName} • ${point.stopAddress ?? ''} • ${formatTravelTime(point.scheduledDepartureTime)} '),
               value: point,
               groupValue: _selectedDropPoint,
               onChanged: (value) => setState(() => _selectedDropPoint = value),
@@ -262,6 +262,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              _buildLegendItem(Colors.yellow, 'Locked'),
+              const SizedBox(width: 12,),
               _buildLegendItem(Colors.grey.shade300, 'Available'),
               const SizedBox(width: 12),
               _buildLegendItem(Colors.green, 'Selected'),
@@ -342,8 +344,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   bool _isStepValid() {
     if (_currentStep == 0) return _selectedSeatIds.isNotEmpty;
-    if (_currentStep == 1)
+    if (_currentStep == 1) {
       return _selectedBoardingPoint != null && _selectedDropPoint != null;
+    }
     return false;
   }
 
@@ -511,45 +514,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   Text(
                     '${trip.availableSeats ?? 0} seats',
                     style: const TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            title: const Text(
-              'Boarding & Drop Points',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Boarding: $boardingPoints',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.location_off, size: 16, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Drop: $dropPoints',
-                      style: const TextStyle(fontSize: 13),
-                    ),
                   ),
                 ],
               ),

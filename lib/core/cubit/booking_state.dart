@@ -1,33 +1,48 @@
 // lib/core/features/booking/data/cubit/booking_state.dart
+
 part of 'booking_cubit.dart';
 
-abstract class BookingState {}
+sealed class BookingState {
+  const BookingState();
+}
 
-class BookingInitial extends BookingState {}
-class BookingLoading extends BookingState {}
-class BookingDetailLoading extends BookingState {}
+class BookingInitial extends BookingState {
+  const BookingInitial();
+}
 
-class BookingsLoaded extends BookingState {
+class BookingLoading extends BookingState {
+  const BookingLoading();
+}
+
+class BookingLoaded extends BookingState {
   final List<Booking> bookings;
-  BookingsLoaded(this.bookings);
-}
+  final BookingDetail? selectedBooking;
+  final CreateBookingResponse? createResponse;
+  final CancelBookingResponse? cancelResponse;
 
-class BookingDetailLoaded extends BookingState {
-  final PostBookingDetail detail;
-  BookingDetailLoaded(this.detail);
-}
+  const BookingLoaded({
+    this.bookings = const [],
+    this.selectedBooking,
+    this.createResponse,
+    this.cancelResponse,
+  });
 
-class BookingCreateSuccess extends BookingState {
-  final CreateBookingResponse response;
-  BookingCreateSuccess(this.response);
-}
-
-class BookingCancelled extends BookingState {
-  final CancelBookingResponse response;
-  BookingCancelled(this.response);
+  BookingLoaded copyWith({
+    List<Booking>? bookings,
+    BookingDetail? selectedBooking,
+    CreateBookingResponse? createResponse,
+    CancelBookingResponse? cancelResponse,
+  }) {
+    return BookingLoaded(
+      bookings: bookings ?? this.bookings,
+      selectedBooking: selectedBooking ?? this.selectedBooking,
+      createResponse: createResponse ?? this.createResponse,
+      cancelResponse: cancelResponse ?? this.cancelResponse,
+    );
+  }
 }
 
 class BookingError extends BookingState {
   final String message;
-  BookingError(this.message);
+  const BookingError(this.message);
 }

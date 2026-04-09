@@ -268,7 +268,7 @@ class _HomeTabState extends State<HomeTab> {
               final trip = trips[index];
               return TripCard(
                 trip: trip,
-                onTap: () => context.push('/trip/${trip.id}'),
+                onTap: () => context.push('/home/trip/${trip.id}'),
               );
             },
           ),

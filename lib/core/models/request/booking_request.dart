@@ -28,12 +28,11 @@ class CreateBookingRequest {
   Map<String, dynamic> toJson() => _$CreateBookingRequestToJson(this);
 }
 
-// lib/core/features/booking/data/models/request/booking_request.dart
 @JsonSerializable()
 class PassengerRequest {
   final String name;
   final int age;
-  final int gender; // ✅ Changed to int
+  final int gender; // 0: male, 1: female, 2: other
 
   PassengerRequest({
     required this.name,

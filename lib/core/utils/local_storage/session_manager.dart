@@ -1,6 +1,6 @@
 // lib/core/utils/local_storage/session_manager.dart
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../auth/data/models/response/login_response.dart';
 import 'storage_stub.dart' if (dart.library.js_interop) 'storage_web.dart';
@@ -84,24 +84,30 @@ class SessionManager {
   // Load Session
   // ------------------------------------------------------------
   Future<void> loadSession() async {
-    if (kIsWeb) {
-      _token = _webStorage.read('auth_token');
-      final userJson = _webStorage.read('user_data');
-      if (userJson != null) {
-        _currentUser = UserResponse.fromJson(jsonDecode(userJson));
+    debugPrint('SessionManager: loadSession started');
+    try {
+      if (kIsWeb) {
+        _token = _webStorage.read('auth_token');
+        final userJson = _webStorage.read('user_data');
+        if (userJson != null) {
+          _currentUser = UserResponse.fromJson(jsonDecode(userJson));
+        }
+        _isGuest = _webStorage.read(_guestKey) == 'true';
+      } else {
+        _token = await _mobileStorage.read(key: 'auth_token');
+        final userJson = await _mobileStorage.read(key: 'user_data');
+        if (userJson != null) {
+          _currentUser = UserResponse.fromJson(jsonDecode(userJson));
+        }
+        final guestValue = await _mobileStorage.read(key: _guestKey);
+        _isGuest = guestValue == 'true';
       }
-      _isGuest = _webStorage.read(_guestKey) == 'true';
-    } else {
-      _token = await _mobileStorage.read(key: 'auth_token');
-      final userJson = await _mobileStorage.read(key: 'user_data');
-      if (userJson != null) {
-        _currentUser = UserResponse.fromJson(jsonDecode(userJson));
-      }
-      final guestValue = await _mobileStorage.read(key: _guestKey);
-      _isGuest = guestValue == 'true';
+      debugPrint('SessionManager: token=${_token != null}, guest=$_isGuest');
+    } catch (e) {
+      debugPrint('SessionManager: loadSession error: $e');
+      rethrow;
     }
   }
-
   // ------------------------------------------------------------
   // Clear Session
   // ------------------------------------------------------------

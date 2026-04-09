@@ -14,17 +14,17 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> initialize() async {
-    await SessionManager().loadSession();
-
-    final token = SessionManager().token;
-    if (token != null) {
-      emit(AuthSessionActive());
-      return;
-    }
-
-    if (SessionManager().isGuest) {
-      emit(AuthGuest());
-    } else {
+    try {
+      await SessionManager().loadSession().timeout(const Duration(seconds: 5));
+      final token = SessionManager().token;
+      if (token != null) {
+        emit(AuthSessionActive());
+      } else if (SessionManager().isGuest) {
+        emit(AuthGuest());
+      } else {
+        emit(AuthUnauthenticated());
+      }
+    } catch (e) {
       emit(AuthUnauthenticated());
     }
   }

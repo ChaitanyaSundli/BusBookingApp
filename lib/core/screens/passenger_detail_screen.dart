@@ -1,4 +1,3 @@
-// lib/features/booking/presentation/screens/passenger_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +29,7 @@ class PassengerDetailsScreen extends StatefulWidget {
 
 class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
   final List<PassengerFormData> _passengers = [];
-
+  bool _didNavigate = false;
   @override
   void initState() {
     super.initState();
@@ -39,7 +38,6 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
     }
   }
 
-  // Map string gender to integer as expected by backend enum
   int _genderToInt(String? gender) {
     switch (gender) {
       case 'Male':
@@ -55,9 +53,7 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
 
   bool _validateForm() {
     for (var p in _passengers) {
-      if (p.name.isEmpty || p.age == null || p.gender == null) {
-        return false;
-      }
+      if (p.name.isEmpty || p.age == null || p.gender == null) return false;
     }
     return true;
   }
@@ -76,11 +72,13 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
       dropStopId: widget.dropStopId,
       seatIds: widget.selectedSeatIds,
       passengers: _passengers
-          .map((p) => PassengerRequest(
-        name: p.name,
-        age: p.age!,
-        gender: _genderToInt(p.gender), // ✅ Send integer
-      ))
+          .map(
+            (p) => PassengerRequest(
+              name: p.name,
+              age: p.age!,
+              gender: _genderToInt(p.gender),
+            ),
+          )
           .toList(),
     );
 
@@ -91,82 +89,85 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<BookingCubit, BookingState>(
       listener: (context, state) {
-        if (state is BookingCreateSuccess) {
-          context.push('/payment', extra: {
-            'bookingId': state.response.bookingId,
-            'paymentId': state.response.paymentId,
-            'totalPrice': state.response.totalPrice,
+
+        if (state is BookingLoaded && state.createResponse != null && !_didNavigate) {
+          _didNavigate = true;
+          final response = state.createResponse!;
+          if (!context.mounted) return;
+          context.push('/home/payment', extra: {
+            'bookingId': response.bookingId,
+            'paymentId': response.paymentId,
+            'totalPrice': response.totalPrice,
           });
         }
         if (state is BookingError) {
+          if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message)),
           );
         }
       },
-      builder: (context, state) {
-        return AppLayout(
-          showAppBar: true,
-          title: 'Passenger Details',
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    AppCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Passenger Information',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      builder: (context, state) => AppLayout(
+        showAppBar: true,
+        title: 'Passenger Details',
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Passenger Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Please enter details for ${widget.selectedSeatIds.length} passenger${widget.selectedSeatIds.length > 1 ? 's' : ''}',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Please enter details for ${widget.selectedSeatIds.length} passenger${widget.selectedSeatIds.length > 1 ? 's' : ''}',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    ...List.generate(_passengers.length, (index) {
-                      return _PassengerFormCard(
-                        index: index + 1,
-                        formData: _passengers[index],
-                        onChanged: () => setState(() {}),
-                      );
-                    }),
-                    const SizedBox(height: 80),
-                  ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...List.generate(_passengers.length, (index) {
+                    return _PassengerFormCard(
+                      index: index + 1,
+                      formData: _passengers[index],
+                      onChanged: () => setState(() {}),
+                    );
+                  }),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
+            if (state is! BookingLoading)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: AppButton(
+                  text: 'Confirm & Proceed to Pay',
+                  onTap: _submitBooking,
                 ),
               ),
-              if (state is! BookingLoading)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                  child: AppButton(
-                    text: 'Confirm & Proceed to Pay',
-                    onTap: _submitBooking,
-                  ),
-                ),
-              if (state is BookingLoading)
-                const Positioned.fill(
-                  child: AppLoadingState(message: 'Creating booking...'),
-                ),
-            ],
-          ),
-        );
-      },
+            if (state is BookingLoading)
+              const Positioned.fill(
+                child: AppLoadingState(message: 'Creating booking...'),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ----------------------------------------------------------------------------
-// Passenger Form Card
-// ----------------------------------------------------------------------------
 class _PassengerFormCard extends StatelessWidget {
   final int index;
   final PassengerFormData formData;
@@ -231,9 +232,6 @@ class _PassengerFormCard extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------------------------
-// Passenger Form Data Holder
-// ----------------------------------------------------------------------------
 class PassengerFormData {
   String name = '';
   int? age;

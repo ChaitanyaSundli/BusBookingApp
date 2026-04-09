@@ -12,12 +12,14 @@ class PaymentScreen extends StatelessWidget {
   final int bookingId;
   final int paymentId;
   final double totalPrice;
+  final String source;
 
   const PaymentScreen({
     super.key,
     required this.bookingId,
     required this.paymentId,
     required this.totalPrice,
+    required this.source,
   });
 
   @override
@@ -27,15 +29,16 @@ class PaymentScreen extends StatelessWidget {
       child: BlocConsumer<PaymentCubit, PaymentState>(
         listener: (context, state) {
           if (state is PaymentSuccess) {
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Payment successful!')),
             );
-            context.go('/home');
+            context.go('/my-bookings/booking/$bookingId');
           }
           if (state is PaymentError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
@@ -52,7 +55,11 @@ class PaymentScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.payment, size: 48, color: Colors.green),
+                          const Icon(
+                            Icons.payment,
+                            size: 48,
+                            color: Colors.green,
+                          ),
                           const SizedBox(height: 16),
                           const Text(
                             'Total Amount',
@@ -68,10 +75,14 @@ class PaymentScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
                           AppButton(
-                            text: state is PaymentLoading ? 'Processing...' : 'Pay Now',
+                            text: state is PaymentLoading
+                                ? 'Processing...'
+                                : 'Pay Now',
                             onTap: state is PaymentLoading
                                 ? null
-                                : () => context.read<PaymentCubit>().createPayment(bookingId),
+                                : () => context
+                                      .read<PaymentCubit>()
+                                      .createPayment(bookingId),
                           ),
                         ],
                       ),

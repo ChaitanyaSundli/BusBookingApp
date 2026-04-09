@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import '../api/booking_api.dart';
 import '../models/request/booking_request.dart';
 import '../models/response/booking.dart';
-import '../models/response/post_booking_detail.dart';
+import '../models/response/booking_details.dart';
 import '../models/response/booking_response.dart';
 
 class BookingRepository {
@@ -20,29 +20,29 @@ class BookingRepository {
     } on DioException catch (e) {
       throw _handleDioError(e, fallback: 'Booking failed');
     } catch (e) {
-      throw Exception('Something went wrong');
+      throw Exception('Something went wrong: $e');
     }
   }
 
   Future<List<Booking>> getBookings() async {
     try {
       final dynamic response = await api.getBookings();
+      print('Bookings response: $response');
       if (response is List) {
         return response.map((e) => Booking.fromJson(e as Map<String, dynamic>)).toList();
       }
       return [];
-    } on DioException catch (e) {
-      throw _handleDioError(e, fallback: 'Failed to fetch bookings');
     } catch (e) {
-      throw Exception('Something went wrong');
+      print('Error fetching bookings: $e');
+      rethrow;
     }
   }
 
-  Future<PostBookingDetail> getBookingDetails(int id) async {
+  Future<BookingDetail> getBookingDetails(int id) async {
     try {
       final dynamic response = await api.getBookingDetails(id);
       final Map<String, dynamic> json = response as Map<String, dynamic>;
-      return PostBookingDetail.fromJson(json);
+      return BookingDetail.fromJson(json);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
         throw Exception('Booking not found');
