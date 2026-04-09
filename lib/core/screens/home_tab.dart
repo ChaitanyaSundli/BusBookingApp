@@ -1,4 +1,4 @@
-// lib/features/home/presentation/screens/home_tab.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -111,7 +111,7 @@ class _HomeTabState extends State<HomeTab> {
           margin: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Source field
+              
               TypeAheadField<String>(
                 controller: _sourceController,
                 builder: (context, controller, focusNode) {
@@ -155,7 +155,7 @@ class _HomeTabState extends State<HomeTab> {
                 hideOnLoading: true,
               ),
               const SizedBox(height: 8),
-              // Swap button
+              
               Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
@@ -165,7 +165,7 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Destination field
+              
               TypeAheadField<String>(
                 controller: _destinationController,
                 builder: (context, controller, focusNode) {
@@ -209,7 +209,7 @@ class _HomeTabState extends State<HomeTab> {
                 hideOnLoading: true,
               ),
               const SizedBox(height: 12),
-              // Date picker
+              
               InkWell(
                 onTap: () => _selectDate(context),
                 child: InputDecorator(

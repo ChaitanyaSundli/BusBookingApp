@@ -4,6 +4,7 @@ import '../models/response/booking.dart';
 import '../models/response/booking_details.dart';
 import '../models/response/booking_response.dart';
 import '../repository/booking_repository.dart';
+import '../utils/local_storage/session_manager.dart';
 
 part 'booking_state.dart';
 // lib/features/booking/data/cubit/booking_cubit.dart
@@ -13,6 +14,10 @@ class BookingCubit extends Cubit<BookingState> {
   BookingCubit(this.repo) : super(const BookingInitial());
 
   Future<void> fetchBookings() async {
+    if (SessionManager().isGuest) {
+      emit(BookingLoaded(bookings: [])); // or appropriate empty/guest state
+      return;
+    }
     emit(const BookingLoading());
     try {
       final bookings = await repo.getBookings();
@@ -23,6 +28,10 @@ class BookingCubit extends Cubit<BookingState> {
   }
 
   Future<void> fetchBookingDetails(int id) async {
+    if (SessionManager().isGuest) {
+      emit(BookingLoaded(bookings: [])); // or appropriate empty/guest state
+      return;
+    }
     emit(const BookingLoading());
     try {
       final detail = await repo.getBookingDetails(id);
@@ -37,6 +46,10 @@ class BookingCubit extends Cubit<BookingState> {
   }
 
   Future<void> createBooking(CreateBookingRequest request) async {
+    if (SessionManager().isGuest) {
+      emit(BookingLoaded(bookings: [])); // or appropriate empty/guest state
+      return;
+    }
     emit(const BookingLoading());
     try {
       final response = await repo.createBooking(request);
@@ -56,6 +69,10 @@ class BookingCubit extends Cubit<BookingState> {
   }
 
   Future<void> cancelBooking(int id) async {
+    if (SessionManager().isGuest) {
+      emit(BookingLoaded(bookings: [])); // or appropriate empty/guest state
+      return;
+    }
     emit(const BookingLoading());
     try {
       final response = await repo.cancelBooking(id);

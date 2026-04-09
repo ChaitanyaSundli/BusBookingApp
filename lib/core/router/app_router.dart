@@ -1,4 +1,4 @@
-// lib/core/utils/router/app_router.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,7 +25,7 @@ class AppRouter {
       refreshListenable: GoRouterRefreshStream(authCubit.stream),
       redirect: (context, state) => AuthGuard.redirect(context, state),
       routes: [
-        // Auth routes (outside shell)
+        
         GoRoute(
           path: '/login',
           name: 'login',
@@ -43,36 +43,12 @@ class AppRouter {
           },
         ),
 
-        // Top‑level routes not part of bottom nav
-        GoRoute(
-          path: '/trip/:id',
-          name: 'trip_detail',
-          builder: (context, state) {
-            final id = int.parse(state.pathParameters['id']!);
-            return TripDetailScreen(tripId: id);
-          },
-        ),
-        GoRoute(
-          path: '/booking/passengers',
-          name: 'booking_passengers',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>;
-            return PassengerDetailsScreen(
-              tripId: extra['tripId'] as int,
-              boardingStopId: extra['boardingStopId'] as int,
-              dropStopId: extra['dropStopId'] as int,
-              selectedSeatIds: (extra['selectedSeatIds'] as List).cast<int>(),
-            );
-          },
-        ),
-
-        // Main shell with bottom navigation
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) {
             return HomeScreenWithShell(navigationShell: navigationShell);
           },
           branches: [
-            // Branch 0: Home Tab
+            
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -101,11 +77,34 @@ class AppRouter {
                         return BookingDetailScreen(bookingId: id, source: 'home');
                       },
                     ),
+                    GoRoute(
+                      path: '/trip/:id',
+                      name: 'trip_detail',
+                      builder: (context, state) {
+                        final id = int.parse(state.pathParameters['id']!);
+                        return TripDetailScreen(tripId: id);
+                      },
+                      routes: [
+                        GoRoute(
+                          path: '/passengers',
+                          name: 'passengers',
+                          builder: (context, state) {
+                            final extra = state.extra as Map<String, dynamic>;
+                            return PassengerDetailsScreen(
+                              tripId: extra['tripId'] as int,
+                              boardingStopId: extra['boardingStopId'] as int,
+                              dropStopId: extra['dropStopId'] as int,
+                              selectedSeatIds: (extra['selectedSeatIds'] as List).cast<int>(),
+                            );
+                          },
+                        ),
+                      ]
+                    ),
                   ],
                 ),
               ],
             ),
-            // Branch 1: My Bookings Tab
+            
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -125,7 +124,7 @@ class AppRouter {
                 ),
               ],
             ),
-            // Branch 2: Profile Tab
+            
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -145,14 +144,14 @@ class AppRouter {
   }
 }
 
-// Helper for GoRouter refresh
+
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     stream.listen((_) => notifyListeners());
   }
 }
 
-// Wrapper for bottom navigation bar
+
 class HomeScreenWithShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 

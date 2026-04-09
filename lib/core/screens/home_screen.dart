@@ -1,4 +1,3 @@
-// lib/features/home/presentation/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -21,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Read tab query parameter after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleDeepLink();
     });
@@ -43,14 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         final isGuest = authState is AuthGuest;
-        final pages = [
-          const HomeTab(),
-          isGuest
-              ? LoginRequiredScreen(redirectTo: '/my-bookings')
-              : const MyBookingsScreen(),
-          isGuest
-              ? LoginRequiredScreen(redirectTo: '/profile')
-              : const ProfileScreen(),
+        // Always show the real screens – no replacement with LoginRequiredScreen
+        final pages = const [
+          HomeTab(),
+          MyBookingsScreen(),
+          ProfileScreen(),
         ];
 
         return Scaffold(
@@ -58,15 +53,16 @@ class _HomeScreenState extends State<HomeScreen> {
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: (index) {
+              // If guest and not the Home tab, show the modal and do NOT switch tabs
               if (isGuest && index != 0) {
                 showLoginRequiredModal(
                   context,
                   redirectTo: index == 1 ? '/my-bookings' : '/profile',
                 );
-                return;
+                return;  // important: don't change _selectedIndex
               }
+              // Normal navigation for logged‑in users
               setState(() => _selectedIndex = index);
-              // Update URL to reflect tab (optional)
               final tabParam = index == 0 ? '' : '?tab=$index';
               context.go('/home$tabParam');
             },

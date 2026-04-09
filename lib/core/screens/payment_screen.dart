@@ -1,4 +1,3 @@
-// lib/features/payment/presentation/screens/payment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -24,30 +23,33 @@ class PaymentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: context.read<PaymentCubit>(),
-      child: BlocConsumer<PaymentCubit, PaymentState>(
-        listener: (context, state) {
-          if (state is PaymentSuccess) {
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Payment successful!')),
-            );
+    return BlocConsumer<PaymentCubit, PaymentState>(
+      listener: (context, state) {
+        if (state is PaymentSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment successful!')),
+          );
+          // If source is 'trip_flow', go to My Bookings detail.
+          // Otherwise (e.g., 'home' or 'my-bookings'), pop back to the detail screen.
+          if (source == 'trip_flow') {
             context.go('/my-bookings/booking/$bookingId');
+          } else {
+            Navigator.pop(context);
           }
-          if (state is PaymentError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          }
-        },
-        builder: (context, state) {
-          return AppLayout(
-            showAppBar: true,
-            title: 'Payment',
-            child: Stack(
-              children: [
-                Center(
+        }
+        if (state is PaymentError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+        }
+      },
+      builder: (context, state) {
+        return AppLayout(
+          showAppBar: true,
+          title: 'Payment',
+          child: Stack(
+            children: [
+              Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 400),
                     child: AppCard(
@@ -81,23 +83,19 @@ class PaymentScreen extends StatelessWidget {
                             onTap: state is PaymentLoading
                                 ? null
                                 : () => context
-                                      .read<PaymentCubit>()
-                                      .createPayment(bookingId),
+                                .read<PaymentCubit>()
+                                .createPayment(bookingId),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-                if (state is PaymentLoading)
-                  const Positioned.fill(
-                    child: AppLoadingState(message: 'Processing payment...'),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
+
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

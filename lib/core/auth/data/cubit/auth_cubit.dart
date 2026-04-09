@@ -30,7 +30,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   void loginAsGuest() async {
-    await repo.logout();
+    await SessionManager().clearSession();
     SessionManager().setGuestMode(true);
     emit(AuthGuest());
   }

@@ -1,4 +1,4 @@
-// lib/features/trips/presentation/screens/trip_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -88,8 +88,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final trip = state.selectedTrip!;
     return AppLayout(
       showAppBar: true,
-      title:
-      '${trip.route?.sourceCity ?? ''} → ${trip.route?.destinationCity ?? ''}',
+      title: '${trip.route?.sourceCity ?? ''} → ${trip.route?.destinationCity ?? ''}',
       child: Column(
         children: [
           Expanded(
@@ -99,24 +98,49 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               onStepContinue: _onStepContinue,
               onStepCancel: _onStepCancel,
               controlsBuilder: (context, details) {
-                // Only show controls for step 0 (Next button)
-                if (_currentStep == 1) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: AppButton(
-                    text: 'Next: Select Boarding Point',
-                    onTap: _isStepValid() ? details.onStepContinue : null,
-                  ),
-                );
+                if (_currentStep == 0) {
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: AppButton(
+                      text: 'Next: Select Boarding Point',
+                      onTap: _isStepValid() ? details.onStepContinue : null,
+                    ),
+                  );
+                } else if (_currentStep == 1) {
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            text: 'Back',
+                            onTap: details.onStepCancel,
+                            outlined: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppButton(
+                            text: 'Next',
+                            onTap: _isStepValid()
+                                ? () => _proceedToPassengers(state)
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
               },
               steps: [
                 Step(
                   title: const Text('Select Seats'),
                   content: _buildSeatSelectionStep(state, trip),
                   isActive: _currentStep >= 0,
-                  state: _currentStep > 0
-                      ? StepState.complete
-                      : StepState.indexed,
+                  state: _currentStep > 0 ? StepState.complete : StepState.indexed,
                 ),
                 Step(
                   title: const Text('Boarding & Drop'),
@@ -132,36 +156,15 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               ],
             ),
           ),
-          if (_currentStep == 1)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: AppButton(
-                  text: 'Proceed to Passenger Details',
-                  onTap: _isStepValid()
-                      ? () => _proceedToPassengers(state)
-                      : null,
-                ),
-              ),
-            ),
+          
         ],
       ),
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Step 1: Seat Selection
-  // --------------------------------------------------------------------------
+  
+  
+  
   Widget _buildSeatSelectionStep(TripsLoaded state, TripDetail trip) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -176,9 +179,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Step 2: Boarding & Drop Selection (Radio List)
-  // --------------------------------------------------------------------------
+  
+  
+  
   Widget _buildStopSelectionStep(
       TripsLoaded state,
       TripDetail trip,
@@ -227,9 +230,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Seat Map Card (shows individual seat price)
-  // --------------------------------------------------------------------------
+  
+  
+  
   Widget _buildSeatMapCard(TripsLoaded state, TripDetail trip) {
     final seats = trip.tripSeats ?? [];
     if (seats.isEmpty)
@@ -321,9 +324,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     });
   }
 
-  // --------------------------------------------------------------------------
-  // Navigation & Validation
-  // --------------------------------------------------------------------------
+  
+  
+  
   void _onStepContinue() {
     if (_currentStep == 0) {
       if (_selectedSeatIds.isEmpty) {
@@ -353,7 +356,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   void _proceedToPassengers(TripsLoaded state) {
     if (!_isStepValid()) return;
     context.push(
-      '/booking/passengers',
+      '/home/trip/$state./passengers',
       extra: {
         'tripId': widget.tripId,
         'boardingStopId': _selectedBoardingPoint!.id,
@@ -363,9 +366,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Helper Widgets
-  // --------------------------------------------------------------------------
+  
+  
+  
   Widget _buildTripInfoCompact(TripDetail trip) {
     final duration = _calculateDuration(
       trip.departureTime ?? '',

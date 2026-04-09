@@ -1,6 +1,7 @@
 // lib/features/home/presentation/cubit/city_search_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../repository/trips_repository.dart';
+import '../utils/local_storage/session_manager.dart';
 
 part 'city_search_state.dart';
 
@@ -14,12 +15,14 @@ class CitySearchCubit extends Cubit<CitySearchState> {
   List<String> _destinationCities = [];
 
   Future<void> loadCities() async {
+    if (SessionManager().isGuest) {
+      emit(CitySearchLoaded(allCities: [], sourceCities: [], destinationCities: []));
+      return;
+    }
     if (_allCities.isNotEmpty) return;
     emit(CitySearchLoading());
     try {
-      // Fetch all routes (you may need to add getAllRoutes method)
-      // For now, we'll use a static list or fetch from a new endpoint.
-      // Alternatively, fetch trips and extract cities.
+
       final routes = await tripsRepo.getAllRoutes(); // to be added
       final cities = <String>{};
       for (var route in routes) {

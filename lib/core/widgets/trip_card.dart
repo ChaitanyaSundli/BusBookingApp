@@ -15,7 +15,9 @@ class TripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lowestPrice = trip.tripSeats!.isNotEmpty
-        ? trip.tripSeats!.map((s) => s.seatPrice).reduce((a, b) => a! < b! ? a : b)
+        ? trip.tripSeats!
+              .map((s) => s.seatPrice)
+              .reduce((a, b) => a! < b! ? a : b)
         : 0.0;
 
     return AppCard(
@@ -81,10 +83,7 @@ class TripCard extends StatelessWidget {
                   ),
                   Text(
                     trip.route?.sourceCity ?? "",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -96,7 +95,10 @@ class TripCard extends StatelessWidget {
                   ),
                   const Icon(Icons.arrow_forward, color: Colors.grey),
                   Text(
-                    _calculateDuration(trip.departureTime ?? '', trip.arrivalTime ?? ''),
+                    _calculateDuration(
+                      trip.departureTime ?? '',
+                      trip.arrivalTime ?? '',
+                    ),
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],
@@ -113,10 +115,7 @@ class TripCard extends StatelessWidget {
                   ),
                   Text(
                     trip.route?.destinationCity ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -129,10 +128,7 @@ class TripCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Starting from',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                  const Text('Starting from', style: TextStyle(fontSize: 12)),
                   Text(
                     '₹${lowestPrice?.toStringAsFixed(0)}',
                     style: TextStyle(
@@ -167,8 +163,8 @@ class TripCard extends StatelessWidget {
 
   String _calculateDuration(String departure, String arrival) {
     try {
-      final dep = DateFormat('HH:mm:ss').parse(departure);
-      final arr = DateFormat('HH:mm:ss').parse(arrival);
+      final dep = DateTime.parse(departure);
+      final arr = DateTime.parse(arrival);
       final diff = arr.difference(dep);
       final hours = diff.inHours;
       final minutes = diff.inMinutes.remainder(60);

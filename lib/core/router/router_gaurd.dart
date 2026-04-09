@@ -1,4 +1,4 @@
-// lib/core/utils/router/route_guard.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,7 +8,7 @@ import '../utils/local_storage/session_manager.dart';
 
 
 class AuthGuard {
-// lib/core/utils/router/route_guard.dart
+
   static String? redirect(BuildContext context, GoRouterState state) {
 
     final authCubit = context.read<AuthCubit>();

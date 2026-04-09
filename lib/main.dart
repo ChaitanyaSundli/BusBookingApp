@@ -90,11 +90,20 @@ class MyApp extends StatelessWidget {
             return MaterialApp.router(
               title: 'QuickBus',
               theme: ThemeData(
-                primarySwatch: Colors.blue,
                 useMaterial3: true,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: Colors.red,
+                  primary: Colors.red,
+                ),
                 inputDecorationTheme: InputDecorationTheme(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                elevatedButtonTheme: ElevatedButtonThemeData(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ),

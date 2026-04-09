@@ -94,10 +94,11 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
           _didNavigate = true;
           final response = state.createResponse!;
           if (!context.mounted) return;
-          context.push('/home/payment', extra: {
+          context.go('/home/payment', extra: {
             'bookingId': response.bookingId,
             'paymentId': response.paymentId,
             'totalPrice': response.totalPrice,
+            'source': 'trip_flow',   // ← add this
           });
         }
         if (state is BookingError) {

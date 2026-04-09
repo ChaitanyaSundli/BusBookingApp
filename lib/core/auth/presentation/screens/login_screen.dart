@@ -115,15 +115,6 @@ class _LoginState extends State<LoginScreen> {
                     },
                     child: const Text("Dont have an account ? Sign Up Now"),
                   ),
-                  AppButton(
-                    text: 'Sign Up',
-                    onTap: () {
-                      final redirect = widget.redirectTo == null
-                          ? '/signup'
-                          : '/signup?redirect=${Uri.encodeComponent(widget.redirectTo!)}';
-                      context.go(redirect);
-                    },
-                  ),
                   const SizedBox(height: 12),
                   AppButton(
                     text: 'Login as Guest',
