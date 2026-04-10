@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../cubit/booking_cubit.dart';
 import '../cubit/payment_cubit.dart';
 import '../widgets/app_layout_frame.dart';
 
@@ -22,6 +23,7 @@ class PaymentScreen extends StatelessWidget {
             SnackBar(content: const Text('Payment successful!'), behavior: SnackBarBehavior.floating, backgroundColor: Theme.of(context).colorScheme.primary),
           );
           context.go('/home/booking/$bookingId');
+          context.read<BookingCubit>().fetchBookings();
         }
         if (state is PaymentError) {
           ScaffoldMessenger.of(context).showSnackBar(
