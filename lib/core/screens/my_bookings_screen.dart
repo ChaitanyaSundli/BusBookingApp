@@ -53,7 +53,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 icon: Icons.book_online_outlined,
                 action: AppButton(
                   text: 'Book a Trip',
-                  onTap: () => context.go('/home'),
+                  onTap: () {
+                    context.go('/home');
+                    _fetchBookings();
+                  },
                 ),
               );
             }
@@ -66,7 +69,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 itemBuilder: (ctx, i) => BookingCard(
                   booking: state.bookings[i],
                   onTap: () async {
-                    await context.push('/my-bookings/booking/${state.bookings[i].id}');
+                    await context.push(
+                      '/my-bookings/booking/${state.bookings[i].id}',
+                    );
                     _fetchBookings();
                   },
                 ),

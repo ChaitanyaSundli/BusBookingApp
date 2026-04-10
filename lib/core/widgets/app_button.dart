@@ -24,7 +24,7 @@ class AppButton extends StatelessWidget {
     this.width,
     this.height = 48,
     this.padding,
-    this.icon,
+    this.icon,  bool loading = false,
   });
 
   @override

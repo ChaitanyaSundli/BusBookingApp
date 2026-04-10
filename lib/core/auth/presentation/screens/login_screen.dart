@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../utils/local_storage/session_manager.dart';
 import '../../../widgets/app_button.dart';
 import '../../../widgets/app_card.dart';
+import '../../../widgets/app_layout_frame.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../data/cubit/auth_cubit.dart';
 
@@ -21,9 +22,13 @@ class _LoginState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _rememberMe = true;
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess || state is AuthSessionActive || state is AuthGuest) {
@@ -34,73 +39,113 @@ class _LoginState extends State<LoginScreen> {
         }
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            SnackBar(
+              content: Text(state.message),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: colorScheme.error,
+            ),
           );
         }
       },
       builder: (context, state) {
-        return Scaffold(
-          body: SafeArea(
+        final isLoading = state is AuthLoading;
+
+        return AppLayout(
+          showAppBar: false, // no app bar for login screen
+          child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-                  const Text(
-                    "Welcome To\nQuickBus",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                  // Logo / Title
+                  Icon(
+                    Icons.directions_bus,
+                    size: 80,
+                    color: colorScheme.primary,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Welcome to\nQuickBus",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Login Card
                   AppCard(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Login',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         AppTextField(
                           hint: "Email",
                           controller: emailController,
+                          prefixIcon: Icon(Icons.email_outlined),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         AppTextField(
                           hint: "Password",
-                          obscure: true,
                           controller: passwordController,
-                        ),
-                        const SizedBox(height: 20),
-                        AppButton(
-                          text: state is AuthLoading ? "Loading..." : "Login",
-                          onTap: state is AuthLoading
-                              ? null
-                              : () {
-                                  context.read<AuthCubit>().login(
-                                    emailController.text.trim(),
-                                    passwordController.text.trim(),
-                                    rememberMe: _rememberMe,
-                                  );
-                                },
+                          obscure: _obscurePassword,
+                          prefixIcon: Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: () {
+                              setState(() => _obscurePassword = !_obscurePassword);
+                            },
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        CheckboxListTile(
-                          value: _rememberMe,
-                          onChanged: (value) {
-                            setState(() {
-                              _rememberMe = value ?? true;
-                            });
-                          },
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          title: const Text('Remember me'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (value) {
+                                    setState(() => _rememberMe = value ?? true);
+                                  },
+                                  activeColor: colorScheme.primary,
+                                ),
+                                const Text('Remember me'),
+                              ],
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                // Forgot password logic
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: colorScheme.primary,
+                              ),
+                              child: const Text('Forgot password?'),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text("Forgot your password?"),
+                        const SizedBox(height: 8),
+                        AppButton(
+                          text: isLoading ? "Logging in..." : "Login",
+                          onTap: isLoading
+                              ? null
+                              : () {
+                            context.read<AuthCubit>().login(
+                              emailController.text.trim(),
+                              passwordController.text.trim(),
+                              rememberMe: _rememberMe,
+                            );
+                          },
+                          loading: isLoading,
                         ),
                       ],
                     ),
@@ -113,15 +158,27 @@ class _LoginState extends State<LoginScreen> {
                           : '/signup?redirect=${Uri.encodeComponent(widget.redirectTo!)}';
                       context.go(redirect);
                     },
-                    child: const Text("Dont have an account ? Sign Up Now"),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                    ),
+                    child: const Text("Don't have an account? Sign Up Now"),
                   ),
                   const SizedBox(height: 12),
-                  AppButton(
-                    text: 'Login as Guest',
-                    onTap: () {
+                  OutlinedButton(
+                    onPressed: () {
                       context.read<AuthCubit>().loginAsGuest();
                     },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: colorScheme.primary),
+                      foregroundColor: colorScheme.primary,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text('Continue as Guest'),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

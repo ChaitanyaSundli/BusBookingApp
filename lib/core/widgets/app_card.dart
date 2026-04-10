@@ -1,4 +1,3 @@
-// lib/core/widgets/app_card.dart
 import 'package:flutter/material.dart';
 
 class AppCard extends StatelessWidget {
@@ -9,7 +8,6 @@ class AppCard extends StatelessWidget {
   final double? elevation;
   final VoidCallback? onTap;
   final BorderRadius? borderRadius;
-  final bool hasBorder;
 
   const AppCard({
     super.key,
@@ -20,21 +18,23 @@ class AppCard extends StatelessWidget {
     this.elevation,
     this.onTap,
     this.borderRadius,
-    this.hasBorder = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final ShapeBorder shape = borderRadius != null
+        ? RoundedRectangleBorder(borderRadius: borderRadius!)
+        : theme.cardTheme.shape ?? const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20)));
+
     final card = Card(
       margin: margin ?? EdgeInsets.zero,
-      elevation: elevation ?? 2,
-      color: color ?? Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: borderRadius ?? BorderRadius.circular(12),
-        side: hasBorder
-            ? BorderSide(color: Colors.grey.shade300, width: 1)
-            : BorderSide.none,
-      ),
+      elevation: elevation ?? theme.cardTheme.elevation ?? 0,
+      color: color ?? theme.cardTheme.color,
+      shape: shape,
+      shadowColor: theme.cardTheme.shadowColor,
+      clipBehavior: theme.cardTheme.clipBehavior ?? Clip.none,
       child: Padding(
         padding: padding ?? const EdgeInsets.all(16),
         child: child,
@@ -42,13 +42,13 @@ class AppCard extends StatelessWidget {
     );
 
     if (onTap != null) {
+      final rippleBorderRadius = borderRadius ?? BorderRadius.circular(20);
       return InkWell(
         onTap: onTap,
-        borderRadius: borderRadius ?? BorderRadius.circular(12),
+        borderRadius: rippleBorderRadius,
         child: card,
       );
     }
-
     return card;
   }
 }

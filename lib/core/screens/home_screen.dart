@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../auth/data/cubit/auth_cubit.dart';
-import '../widgets/login_required.dart';
+import '../../../../core/widgets/login_required.dart';
 import 'home_tab.dart';
 import 'my_bookings_screen.dart';
 import 'profile_screen.dart';
@@ -20,9 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleDeepLink();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleDeepLink());
   }
 
   void _handleDeepLink() {
@@ -41,47 +39,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         final isGuest = authState is AuthGuest;
-        // Always show the real screens – no replacement with LoginRequiredScreen
         final pages = const [
           HomeTab(),
           MyBookingsScreen(),
           ProfileScreen(),
         ];
-
         return Scaffold(
           body: pages[_selectedIndex],
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: (index) {
-              // If guest and not the Home tab, show the modal and do NOT switch tabs
               if (isGuest && index != 0) {
-                showLoginRequiredModal(
-                  context,
-                  redirectTo: index == 1 ? '/my-bookings' : '/profile',
-                );
-                return;  // important: don't change _selectedIndex
+                showLoginRequiredModal(context, redirectTo: index == 1 ? '/my-bookings' : '/profile');
+                return;
               }
-              // Normal navigation for logged‑in users
               setState(() => _selectedIndex = index);
               final tabParam = index == 0 ? '' : '?tab=$index';
               context.go('/home$tabParam');
             },
             items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.book_online_outlined),
-                activeIcon: Icon(Icons.book_online),
-                label: 'My Bookings',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
+              BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.book_online_outlined), activeIcon: Icon(Icons.book_online), label: 'My Bookings'),
+              BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
             ],
           ),
         );

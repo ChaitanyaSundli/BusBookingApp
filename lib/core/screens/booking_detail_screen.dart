@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_states.dart';
 import '../cubit/booking_cubit.dart';
@@ -24,11 +22,24 @@ class BookingDetailScreen extends StatefulWidget {
   State<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
 
-class _BookingDetailScreenState extends State<BookingDetailScreen> {
+class _BookingDetailScreenState extends State<BookingDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fadeController;
+
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
     context.read<BookingCubit>().fetchBookingDetails(widget.bookingId);
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
   }
 
   @override
@@ -41,387 +52,145 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               content: Text(
                 state.cancelResponse!.message ?? 'Booking cancelled',
               ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
           context.pop();
           context.read<BookingCubit>().fetchBookings();
         }
         if (state is BookingError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
         }
       },
-      builder: (context, state) => switch (state) {
-        BookingLoading() => const Scaffold(
-          body: AppLoadingState(message: 'Loading booking details...'),
-        ),
-        BookingError(message: final msg) => AppLayout(
+      builder: (context, state) {
+        if (state is BookingLoaded && state.selectedBooking != null)
+          _fadeController.forward();
+        else
+          _fadeController.reverse();
+
+        return AppLayout(
           showAppBar: true,
-          title: 'Booking Details',
+          title: 'Booking #${widget.bookingId}',
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _buildBody(state),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(BookingState state) {
+    switch (state) {
+      case BookingLoading():
+        return const Center(
+          child: AppLoadingState(message: 'Loading booking details...'),
+        );
+      case BookingError(message: final msg):
+        return Center(
           child: AppErrorState(
             message: msg,
             onRetry: () => context.read<BookingCubit>().fetchBookingDetails(
               widget.bookingId,
             ),
           ),
+        );
+      case BookingLoaded(selectedBooking: final booking):
+        if (booking == null)
+          return const Center(
+            child: AppEmptyState(message: 'Booking not found'),
+          );
+        return FadeTransition(
+          opacity: _fadeController,
+          child: _buildContent(booking),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildContent(BookingDetail booking) {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildStatusCard(booking),
+                const SizedBox(height: 16),
+                _buildTripCard(booking),
+                const SizedBox(height: 16),
+                _buildPassengersCard(booking),
+                const SizedBox(height: 16),
+                _buildSeatsCard(booking),
+                const SizedBox(height: 16),
+                _buildStopsCard(booking),
+                const SizedBox(height: 16),
+                _buildPaymentCard(booking),
+              ],
+            ),
+          ),
         ),
-        BookingLoaded(selectedBooking: final booking) =>
-          booking == null
-              ? const AppEmptyState(message: 'Booking not found')
-              : _buildContent(booking, state),
-        _ => const SizedBox.shrink(),
-      },
+        if (booking.status.toLowerCase() != 'cancelled')
+          _buildBottomActions(booking),
+      ],
     );
   }
 
-  Widget _buildContent(BookingDetail booking, BookingLoaded state) {
-    return AppLayout(
-      showAppBar: true,
-      title: 'Booking #${booking.id}',
-      child: Column(
+  Widget _buildStatusCard(BookingDetail booking) {
+    final statusColor = _getStatusColor(booking.status, context);
+    return AppCard(
+      child: Row(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppCard(
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              booking.status,
-                            ).withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.confirmation_number_outlined,
-                            color: _getStatusColor(booking.status),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Booking Status',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                booking.status.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getStatusColor(booking.status),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (booking.paymentStatus != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              'Payment: ${booking.paymentStatus}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Trip Details',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _row(
-                          'Route',
-                          '${booking.trip.route.sourceCity} → ${booking.trip.route.destinationCity}',
-                          Icons.route,
-                        ),
-                        _row(
-                          'Travel Date',
-                          _formatDate(booking.trip.travelStartDate),
-                          Icons.calendar_today,
-                        ),
-                        _row(
-                          'Departure',
-                          _formatTime(booking.trip.departureTime),
-                          Icons.departure_board,
-                        ),
-                        _row(
-                          'Arrival',
-                          _formatTime(booking.trip.arrivalTime),
-                          Icons.watch_later_outlined,
-                        ),
-                        _row(
-                          'Distance',
-                          '${booking.trip.route.totalDistanceKm.toStringAsFixed(1)} km',
-                          Icons.straighten,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Passengers',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...booking.passengers.map(
-                          (p) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).primaryColor.withValues(alpha: 0.1),
-                                  child: Text(
-                                    p.name.substring(0, 1).toUpperCase(),
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${p.age} years • ${p.gender}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Seat Details',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...booking.bookingSeats.map(
-                          (bs) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).primaryColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.event_seat,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Seat ${bs.tripSeat.seat.seatNumber}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${bs.tripSeat.seat.seatType} • Deck ${bs.tripSeat.seat.deck}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Passenger: ${bs.passenger.name}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '₹${bs.seatPrice.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Boarding & Drop-off',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _row(
-                          'Boarding',
-                          '${booking.boardingStop.stopName}, ${booking.boardingStop.cityName}',
-                          Icons.location_on,
-                        ),
-                        _row(
-                          'Drop-off',
-                          '${booking.dropStop.stopName}, ${booking.dropStop.cityName}',
-                          Icons.location_off,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Payment Summary',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Total Amount'),
-                            Text(
-                              '₹${booking.bookingSeats.fold(0.0, (sum, bs) => sum + bs.seatPrice).toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.confirmation_number_outlined,
+              color: statusColor,
+              size: 28,
             ),
           ),
-
-          if (booking.status.toLowerCase() != 'cancelled')
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (booking.status.toLowerCase() == 'pending')
-                      AppButton(
-                        text: 'Pay Now',
-                        onTap: () => _navigateToPayment(booking),
-                        // ← pass booking, not state
-                        backgroundColor: Colors.green,
-                        icon: const Icon(
-                          Icons.payment,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    if (booking.status.toLowerCase() != 'pending')
-                      const SizedBox(height: 8),
-                    AppButton(
-                      text: 'Cancel Booking',
-                      onTap: () => _showCancelConfirmation(booking.id),
-                      backgroundColor: Colors.red,
-                    ),
-                  ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Booking Status',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  booking.status.toUpperCase(),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: statusColor),
+                ),
+              ],
+            ),
+          ),
+          if (booking.paymentStatus != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Text(
+                'Payment: ${booking.paymentStatus}',
+                style: Theme.of(context).textTheme.labelSmall,
               ),
             ),
         ],
@@ -429,24 +198,213 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  Widget _row(String label, String value, IconData icon) {
+  Widget _buildTripCard(BookingDetail booking) => _infoCard(
+    title: 'Trip Details',
+    icon: Icons.directions_bus,
+    children: [
+      _infoRow(
+        'Route',
+        '${booking.trip.route.sourceCity} → ${booking.trip.route.destinationCity}',
+        Icons.route,
+      ),
+      _infoRow(
+        'Travel Date',
+        _formatDate(booking.trip.travelStartDate),
+        Icons.calendar_today,
+      ),
+      _infoRow(
+        'Departure',
+        _formatTime(booking.trip.departureTime),
+        Icons.departure_board,
+      ),
+      _infoRow(
+        'Arrival',
+        _formatTime(booking.trip.arrivalTime),
+        Icons.watch_later_outlined,
+      ),
+      _infoRow(
+        'Distance',
+        '${booking.trip.route.totalDistanceKm.toStringAsFixed(1)} km',
+        Icons.straighten,
+      ),
+    ],
+  );
+
+  Widget _buildPassengersCard(BookingDetail booking) => _infoCard(
+    title: 'Passengers',
+    icon: Icons.people,
+    children: booking.passengers.map((p) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                p.name.substring(0, 1).toUpperCase(),
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.name, style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    '${p.age} years • ${p.gender}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList(),
+  );
+
+  Widget _buildSeatsCard(BookingDetail booking) => _infoCard(
+    title: 'Seat Details',
+    icon: Icons.event_seat,
+    children: booking.bookingSeats.map((bs) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.event_seat,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Seat ${bs.tripSeat.seat.seatNumber}',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  Text(
+                    '${bs.tripSeat.seat.seatType} • Deck ${bs.tripSeat.seat.deck}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Text(
+                    'Passenger: ${bs.passenger.name}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '₹${bs.seatPrice.toStringAsFixed(2)}',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    }).toList(),
+  );
+
+  Widget _buildStopsCard(BookingDetail booking) => _infoCard(
+    title: 'Boarding & Drop-off',
+    icon: Icons.location_on,
+    children: [
+      _infoRow(
+        'Boarding',
+        '${booking.boardingStop.stopName}, ${booking.boardingStop.cityName}',
+        Icons.location_on,
+      ),
+      _infoRow(
+        'Drop-off',
+        '${booking.dropStop.stopName}, ${booking.dropStop.cityName}',
+        Icons.location_off,
+      ),
+    ],
+  );
+
+  Widget _buildPaymentCard(BookingDetail booking) {
+    final total = booking.bookingSeats.fold(
+      0.0,
+      (sum, bs) => sum + bs.seatPrice,
+    );
+    return _infoCard(
+      title: 'Payment Summary',
+      icon: Icons.receipt,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Total Amount', style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              '₹${total.toStringAsFixed(2)}',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _infoCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: Colors.grey.shade600),
+          Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
+                Text(label, style: Theme.of(context).textTheme.labelSmall),
                 const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontSize: 14)),
+                Text(value, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
           ),
@@ -455,16 +413,65 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  Color _getStatusColor(String status) {
+  Widget _buildBottomActions(BookingDetail booking) {
+    final isPending = booking.status.toLowerCase() == 'pending';
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).cardTheme.shadowColor!.withOpacity(0.1),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isPending)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _navigateToPayment(booking),
+                  icon: const Icon(Icons.payment),
+                  label: const Text('Pay Now'),
+                ),
+              ),
+            if (isPending) const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showCancelConfirmation(booking.id),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Cancel Booking'),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status, BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     switch (status.toLowerCase()) {
       case 'confirmed':
-        return Colors.green;
+        return scheme.primary;
       case 'pending':
-        return Colors.orange;
+        return scheme.secondary;
       case 'cancelled':
-        return Colors.red;
+        return scheme.error;
       default:
-        return Colors.grey;
+        return scheme.onSurfaceVariant;
     }
   }
 
@@ -474,17 +481,21 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel Booking'),
         content: const Text('Are you sure you want to cancel this booking?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('No'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<BookingCubit>().cancelBooking(bookingId);
               context.read<BookingCubit>().fetchBookings();
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Yes, Cancel'),
           ),
         ],
@@ -495,8 +506,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   String _formatTime(String? time) {
     if (time == null) return '--';
     try {
-      final dt = DateTime.parse(time).toLocal();
-      return DateFormat('hh:mm a').format(dt);
+      return DateFormat('hh:mm a').format(DateTime.parse(time).toLocal());
     } catch (_) {
       return time;
     }
@@ -505,25 +515,24 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   String _formatDate(String? date) {
     if (date == null) return '--';
     try {
-      final dt = DateTime.parse(date);
-      return DateFormat('EEE, dd MMM yyyy').format(dt);
+      return DateFormat('EEE, dd MMM yyyy').format(DateTime.parse(date));
     } catch (_) {
       return date;
     }
   }
 
-  void _navigateToPayment(BookingDetail booking) async {
+  void _navigateToPayment(BookingDetail booking) {
     final totalPrice = booking.bookingSeats.fold(
       0.0,
       (sum, bs) => sum + bs.seatPrice,
     );
-    await context.push(
+    context.go(
       '/home/payment',
       extra: {
         'bookingId': booking.id,
         'paymentId': booking.id,
         'totalPrice': totalPrice,
-        'source': 'booking_detail', // ← add this
+        'source': 'booking_detail',
       },
     );
     context.read<BookingCubit>().fetchBookingDetails(widget.bookingId);

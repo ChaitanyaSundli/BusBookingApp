@@ -173,7 +173,7 @@ class TripsRepository {
       case DioExceptionType.receiveTimeout:
         return 'Connection timeout. Please check your internet.';
       case DioExceptionType.connectionError:
-        return 'No internet connection.';
+        return 'Something Went Wrong. \nTry Again Later';
       default:
         return fallback;
     }
